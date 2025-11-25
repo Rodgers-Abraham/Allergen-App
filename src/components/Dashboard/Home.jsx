@@ -102,6 +102,26 @@ const Home = () => {
                 >
                     <Character status="happy" size={24} /> Play Allergy Hero
                 </button>
+
+                <button
+                    style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        border: 'none',
+                        fontSize: '1rem',
+                        padding: '0.8rem 2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        borderRadius: '50px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        boxShadow: '0 4px 15px rgba(118, 75, 162, 0.4)'
+                    }}
+                    onClick={() => navigate('/buddy')}
+                >
+                    <span style={{ fontSize: '1.2rem' }}>🤖</span> Chat with Buddy
+                </button>
             </div>
 
             <div style={{ marginTop: 'auto' }}>

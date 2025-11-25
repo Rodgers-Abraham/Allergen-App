@@ -7,6 +7,7 @@ import Home from './components/Dashboard/Home';
 import UserProfile from './components/Profile/UserProfile';
 import CameraView from './components/Scanner/CameraView';
 import HeroGame from './components/Gamification/HeroGame';
+import AllergenBuddy from './components/Chat/AllergenBuddy';
 import './index.css';
 import AppLayout from './components/Layout/AppLayout';
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/scan" element={<CameraView />} />
           <Route path="/game" element={<HeroGame />} />
+          <Route path="/buddy" element={<AllergenBuddy />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
