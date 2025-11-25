@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { saveUser, saveTheme } from '../../lib/storage';
+import { registerUser, saveTheme } from '../../lib/storage';
 import { COMMON_ALLERGENS } from '../../lib/mockDatabase';
-import { User, Shield, AlertTriangle, Camera } from 'lucide-react';
+import { User, Shield, AlertTriangle, Camera, Phone } from 'lucide-react';
 
 const SignupForm = () => {
     const navigate = useNavigate();
@@ -10,12 +10,14 @@ const SignupForm = () => {
         fullName: '',
         nickname: '',
         email: '',
+        phoneNumber: '',
         password: '',
         isChild: false,
         parentEmail: '',
         allergens: [],
         profilePicture: null
     });
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -47,27 +49,33 @@ const SignupForm = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setError('');
 
         if (formData.isChild && !formData.parentEmail) {
             alert("Parent's email is required for child accounts.");
             return;
         }
 
-        // Mock saving user
-        saveUser(formData);
-        // Default theme
-        saveTheme('light');
-
-        navigate('/dashboard');
+        try {
+            registerUser(formData);
+            // Default theme
+            saveTheme('light');
+            navigate('/dashboard');
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     return (
-        <div className="container" style={{ justifyContent: 'center' }}>
+        <div className="container" style={{ justifyContent: 'center', paddingBottom: '60px' }}>
             <div className="card">
                 <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                     <img src="/logo.png" alt="My Allergy Diary Logo" style={{ width: '60px', height: '60px' }} />
                 </div>
                 <h2 style={{ textAlign: 'center', color: 'var(--color-primary)', marginTop: 0 }}>Join My Allergy Diary</h2>
+
+                {error && <p style={{ color: 'var(--color-danger)', textAlign: 'center' }}>{error}</p>}
+
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
                     <div style={{ textAlign: 'center' }}>
@@ -133,6 +141,19 @@ const SignupForm = () => {
                             required
                             value={formData.email}
                             onChange={handleChange}
+                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
+                        />
+                    </label>
+
+                    <label>
+                        Phone Number
+                        <input
+                            type="tel"
+                            name="phoneNumber"
+                            required
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            placeholder="+1234567890"
                             style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
                         />
                     </label>

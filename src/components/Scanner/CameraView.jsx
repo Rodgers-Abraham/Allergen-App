@@ -4,9 +4,9 @@ import { ArrowLeft, Search, Camera, Type } from 'lucide-react';
 import { analyzeProduct } from '../../lib/allergenLogic';
 import { getUser, addToHistory } from '../../lib/storage';
 import { fetchProductByBarcode, searchProductByName } from '../../lib/openFoodFacts';
-import { recognizeText } from '../../lib/ocr';
+// import { recognizeText } from '../../lib/ocr';
 import WarningPopup from '../Results/WarningPopup';
-import { Html5Qrcode } from 'html5-qrcode';
+// import { Html5Qrcode } from 'html5-qrcode';
 
 const CameraView = () => {
     const navigate = useNavigate();
@@ -40,6 +40,7 @@ const CameraView = () => {
     const startBarcodeScanner = () => {
         if (!window.isSecureContext && window.location.hostname !== 'localhost') return;
 
+        /*
         const html5QrCode = new Html5Qrcode("reader");
         scannerRef.current = html5QrCode;
 
@@ -58,14 +59,18 @@ const CameraView = () => {
             console.error("Error starting scanner", err);
             setStatusMessage("Camera access failed. Ensure permissions are granted.");
         });
+        */
+        setStatusMessage("Scanner disabled for debugging.");
     };
 
     const stopBarcodeScanner = () => {
+        /*
         if (scannerRef.current && scannerRef.current.isScanning) {
             scannerRef.current.stop().then(() => {
                 scannerRef.current.clear();
             }).catch(err => console.error("Failed to stop scanner", err));
         }
+        */
     };
 
     const handleBarcodeScan = async (barcode) => {
@@ -103,6 +108,13 @@ const CameraView = () => {
         if (!file) return;
 
         setScanning(true);
+        setStatusMessage("OCR temporarily disabled for debugging.");
+        setTimeout(() => {
+            setScanning(false);
+            setStatusMessage("");
+        }, 2000);
+
+        /*
         setStatusMessage("Analyzing text...");
 
         try {
@@ -130,6 +142,7 @@ const CameraView = () => {
             setStatusMessage("Analysis failed.");
             setScanning(false);
         }
+        */
     };
 
     const processResult = (productData) => {

@@ -1,6 +1,7 @@
-import Tesseract from 'tesseract.js';
+// import Tesseract from 'tesseract.js';
 
 export const recognizeText = async (imageBlob) => {
+  /*
   try {
     console.log("Starting OCR...");
     const result = await Tesseract.recognize(
@@ -20,4 +21,6 @@ export const recognizeText = async (imageBlob) => {
     console.error("OCR Error:", error);
     return { text: '', error: error.message || 'Failed to recognize text' };
   }
+  */
+  return { text: 'OCR Disabled', confidence: 0 };
 };

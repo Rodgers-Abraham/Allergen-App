@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUser, saveUser, clearUser } from '../../lib/storage';
+import { getUser, updateUserProfile, logoutUser } from '../../lib/storage';
 import { COMMON_ALLERGENS } from '../../lib/mockDatabase';
 import { ArrowLeft, Camera, LogOut, Save } from 'lucide-react';
 
@@ -45,12 +45,13 @@ const UserProfile = () => {
 
     const handleSave = (e) => {
         e.preventDefault();
-        saveUser(formData);
+        updateUserProfile(formData);
         setMessage('Profile saved successfully!');
         setTimeout(() => setMessage(''), 3000);
     };
 
     const handleSignOut = () => {
+        logoutUser();
         navigate('/');
     };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUser, getHistory, clearUser, getTheme, saveTheme } from '../../lib/storage';
+import { getUser, getHistory, logoutUser, getTheme, saveTheme } from '../../lib/storage';
 import Character from './Character';
 import { Scan, LogOut, Moon, Sun, History } from 'lucide-react';
 
@@ -32,7 +32,7 @@ const Home = () => {
     };
 
     const handleLogout = () => {
-        clearUser();
+        logoutUser();
         navigate('/');
     };
 
