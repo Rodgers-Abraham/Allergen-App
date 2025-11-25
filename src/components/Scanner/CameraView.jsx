@@ -40,29 +40,7 @@ const CameraView = () => {
     }, [mode]);
 
     const startBarcodeScanner = () => {
-        if (!window.isSecureContext && window.location.hostname !== 'localhost') return;
-
-        /*
-        const html5QrCode = new Html5Qrcode("reader");
-        scannerRef.current = html5QrCode;
-
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
-                handleBarcodeScan(decodedText);
-            },
-            (errorMessage) => {
-                // ignore
-            }
-        ).catch(err => {
-            console.error("Error starting scanner", err);
-            setStatusMessage("Camera access failed. Ensure permissions are granted.");
-        });
-        */
-        setStatusMessage("Scanner disabled for debugging.");
+        // Scanner logic replaced by Webcam component
     };
 
     const stopBarcodeScanner = () => {
@@ -118,11 +96,11 @@ const CameraView = () => {
 
         /*
         setStatusMessage("Analyzing text...");
-
+ 
         try {
             const ocrResult = await recognizeText(file);
             // const ocrResult = { text: "Dummy OCR Text" }; // Dummy for now
-
+ 
             if (!ocrResult.text || ocrResult.text.trim().length < 5) {
                 setStatusMessage("No readable text found. Try again with better lighting.");
                 setTimeout(() => {
@@ -131,7 +109,7 @@ const CameraView = () => {
                 }, 3000);
                 return;
             }
-
+ 
             const productData = {
                 found: true,
                 name: "Scanned Label",
