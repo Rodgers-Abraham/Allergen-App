@@ -6,7 +6,8 @@ import ForgotPassword from './components/Auth/ForgotPassword';
 import Home from './components/Dashboard/Home';
 import UserProfile from './components/Profile/UserProfile';
 import CameraView from './components/Scanner/CameraView';
-// import MainLayout from './components/Layout/MainLayout';
+import HeroGame from './components/Gamification/HeroGame';
+import './index.css';
 import AppLayout from './components/Layout/AppLayout';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/dashboard" element={<Home />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/scan" element={<CameraView />} />
+          <Route path="/game" element={<HeroGame />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -6,6 +6,8 @@ import { getUser, addToHistory } from '../../lib/storage';
 import { fetchProductByBarcode, searchProductByName } from '../../lib/openFoodFacts';
 // import { recognizeText } from '../../lib/ocr';
 import WarningPopup from '../Results/WarningPopup';
+import Webcam from 'react-webcam';
+import ScannerOverlay from './ScannerOverlay';
 // import { Html5Qrcode } from 'html5-qrcode';
 
 const CameraView = () => {
@@ -208,9 +210,18 @@ const CameraView = () => {
             </div>
 
             {/* Scanner Area */}
-            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 {mode === 'barcode' ? (
-                    <div id="reader" style={{ width: '100%', height: '100%' }}></div>
+                    <>
+                        <Webcam
+                            audio={false}
+                            ref={scannerRef}
+                            screenshotFormat="image/jpeg"
+                            videoConstraints={{ facingMode: 'environment' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <ScannerOverlay status={scanning ? 'analyzing' : (result ? result.status : 'scanning')} />
+                    </>
                 ) : (
                     <div style={{ textAlign: 'center', color: 'white' }}>
                         <Type size={64} style={{ marginBottom: '1rem', opacity: 0.5 }} />

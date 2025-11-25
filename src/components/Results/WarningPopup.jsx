@@ -1,5 +1,6 @@
 import React from 'react';
 import Character from '../Dashboard/Character';
+import SafeSwapList from '../Scanner/SafeSwapList';
 import { X } from 'lucide-react';
 
 const WarningPopup = ({ result, onClose }) => {
@@ -73,10 +74,13 @@ const WarningPopup = ({ result, onClose }) => {
                 <p style={{ fontSize: '1.1em', fontWeight: 'bold' }}>{message}</p>
 
                 {status === 'danger' && (
-                    <div style={{ marginTop: '1rem', padding: '10px', background: '#ffebee', borderRadius: '8px', color: '#c62828' }}>
-                        <strong>Action Required:</strong><br />
-                        Do not consume. Find an alternative.
-                    </div>
+                    <>
+                        <div style={{ marginTop: '1rem', padding: '10px', background: '#ffebee', borderRadius: '8px', color: '#c62828' }}>
+                            <strong>Action Required:</strong><br />
+                            Do not consume. Find an alternative.
+                        </div>
+                        <SafeSwapList allergens={result.detectedAllergens || []} />
+                    </>
                 )}
 
                 <button

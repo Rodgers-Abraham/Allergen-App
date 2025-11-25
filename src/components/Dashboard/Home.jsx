@@ -83,6 +83,25 @@ const Home = () => {
                     <Scan size={32} />
                     Scan Now
                 </button>
+
+                <button
+                    style={{
+                        background: 'var(--color-surface)',
+                        color: 'var(--color-primary)',
+                        border: '2px solid var(--color-primary)',
+                        fontSize: '1rem',
+                        padding: '0.8rem 2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        borderRadius: '50px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                    }}
+                    onClick={() => navigate('/game')}
+                >
+                    <Character status="happy" size={24} /> Play Allergy Hero
+                </button>
             </div>
 
             <div style={{ marginTop: 'auto' }}>
