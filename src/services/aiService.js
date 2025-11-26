@@ -9,7 +9,7 @@ if (!API_KEY) {
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// 2. Select the Model (We confirmed this works for you!)
+// 2. Select the Model (Fixed Syntax)
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 /**
@@ -41,7 +41,6 @@ export async function analyzeImage(imageFile, userAllergens = []) {
         // Convert image for Gemini
         const imagePart = await fileToGenerativePart(imageFile);
 
-        // 3. The Smart Prompt
         // We explicitly ask for JSON so we can easily read the result in our app
         const prompt = `
       You are an expert food safety assistant.
@@ -58,18 +57,14 @@ export async function analyzeImage(imageFile, userAllergens = []) {
         "alternatives": ["Safe Option 1", "Safe Option 2", "Safe Option 3"]
       }
     `;
-
-        // 4. Send to Google
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
         let text = response.text();
 
         console.log("🤖 Raw AI Response:", text);
 
-        // Clean up potential markdown formatting (just in case)
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        // 5. Parse the JSON
         const data = JSON.parse(text);
         return data;
 
@@ -89,14 +84,43 @@ export async function analyzeImage(imageFile, userAllergens = []) {
  */
 export async function chatWithBuddy(message, history = []) {
     try {
+        // 1. Sanitize History
+        // Google needs specific format: { role, parts: [{ text }] }
+        let validHistory = history.map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: typeof msg.parts === 'string' ? msg.parts : msg.parts?.[0]?.text || "" }]
+        })).filter(msg => msg.parts[0].text !== "");
+
+        // 2. CRITICAL FIX: The "User First" Rule
+        // If the history array is not empty, the FIRST message MUST be from the 'user'.
+        if (validHistory.length > 0 && validHistory[0].role === 'model') {
+            console.log("🤖 Removing bot greeting from history to satisfy API rules...");
+            validHistory.shift(); // Removes the first element
+        }
+
+        // 3. Start Chat
         const chat = model.startChat({
-            history: history,
+            history: validHistory,
         });
+
+        // 4. Send Message
         const result = await chat.sendMessage(message);
         const response = await result.response;
         return response.text();
+
     } catch (error) {
-        console.error("Chat Error:", error);
-        return "I'm having trouble connecting right now. Please try again later!";
+        console.error("❌ Chat Error Details:", error);
+
+        // Fallback: If history causes a crash, try sending just the new message
+        try {
+            console.log("⚠️ Retrying request without history...");
+            const chat = model.startChat({ history: [] }); // Reset memory
+            const result = await chat.sendMessage(message);
+            const response = await result.response;
+            return response.text();
+        } catch (retryError) {
+            console.error("Fatal Chat Error:", retryError);
+            return "I'm having trouble connecting to the brain right now. Please try again in a moment!";
+        }
     }
 }
