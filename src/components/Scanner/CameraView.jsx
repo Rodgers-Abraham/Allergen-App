@@ -4,11 +4,12 @@ import { ArrowLeft, Search, Camera, Type } from 'lucide-react';
 import { analyzeProduct } from '../../lib/allergenLogic';
 import { getUser, addToHistory } from '../../lib/storage';
 import { fetchProductByBarcode, searchProductByName } from '../../lib/openFoodFacts';
-// import { recognizeText } from '../../lib/ocr';
+// Import the AI Service and the new Component
+import { analyzeImage } from '../../services/aiService';
+import SafeSwap from './SafeSwap';
 import WarningPopup from '../Results/WarningPopup';
 import Webcam from 'react-webcam';
 import ScannerOverlay from './ScannerOverlay';
-// import { Html5Qrcode } from 'html5-qrcode';
 
 const CameraView = () => {
     const navigate = useNavigate();
@@ -23,6 +24,7 @@ const CameraView = () => {
     const fileInputRef = useRef(null);
 
     useEffect(() => {
+        // Simple HTTPS check (except for localhost)
         if (!window.isSecureContext && window.location.hostname !== 'localhost') {
             setStatusMessage("Camera requires HTTPS. Please use a secure connection.");
             return;
@@ -40,19 +42,14 @@ const CameraView = () => {
     }, [mode]);
 
     const startBarcodeScanner = () => {
-        // Scanner logic replaced by Webcam component
+        // Logic handled by Webcam component mounting
     };
 
     const stopBarcodeScanner = () => {
-        /*
-        if (scannerRef.current && scannerRef.current.isScanning) {
-            scannerRef.current.stop().then(() => {
-                scannerRef.current.clear();
-            }).catch(err => console.error("Failed to stop scanner", err));
-        }
-        */
+        // Logic handled by Webcam component unmounting
     };
 
+    // --- 1. BARCODE LOGIC (OpenFoodFacts) ---
     const handleBarcodeScan = async (barcode) => {
         if (scanning) return;
         setScanning(true);
@@ -68,6 +65,7 @@ const CameraView = () => {
         }
     };
 
+    // --- 2. MANUAL SEARCH LOGIC ---
     const handleManualSearch = async (e) => {
         e.preventDefault();
         if (!query) return;
@@ -83,46 +81,48 @@ const CameraView = () => {
         }
     };
 
+    // --- 3. AI / OCR LOGIC (The New Brain) ---
     const handleOCR = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         setScanning(true);
-        setStatusMessage("OCR temporarily disabled for debugging.");
-        setTimeout(() => {
+        setStatusMessage("🤖 AI is analyzing ingredients...");
+
+        try {
+            // Get user's allergies to check against
+            const user = getUser();
+
+            // Send to Gemini (Brain)
+            const aiAnalysis = await analyzeImage(file, user.allergens);
+
+            console.log("AI Result:", aiAnalysis);
+
+            // Format result for the Popup
+            const finalResult = {
+                status: aiAnalysis.status, // 'danger' or 'safe'
+                product: { name: "Scanned Label" },
+                matches: aiAnalysis.detected || [],
+                safeAlternatives: aiAnalysis.alternatives || [] // Pass the suggestions
+            };
+
+            setResult(finalResult);
+            addToHistory(finalResult);
             setScanning(false);
             setStatusMessage("");
-        }, 2000);
 
-        /*
-        setStatusMessage("Analyzing text...");
- 
-        try {
-            const ocrResult = await recognizeText(file);
-            // const ocrResult = { text: "Dummy OCR Text" }; // Dummy for now
- 
-            if (!ocrResult.text || ocrResult.text.trim().length < 5) {
-                setStatusMessage("No readable text found. Try again with better lighting.");
-                setTimeout(() => {
-                    setScanning(false);
-                    setStatusMessage("");
-                }, 3000);
-                return;
+            if (finalResult.status === 'danger' && navigator.vibrate) {
+                navigator.vibrate([500, 200, 500]);
             }
- 
-            const productData = {
-                found: true,
-                name: "Scanned Label",
-                ingredients: ocrResult.text,
-                image: URL.createObjectURL(file),
-                allergens_tags: []
-            };
-            processResult(productData);
+
         } catch (error) {
-            setStatusMessage("Analysis failed.");
-            setScanning(false);
+            console.error("AI Error:", error);
+            setStatusMessage("AI Analysis failed. Try again.");
+            setTimeout(() => {
+                setScanning(false);
+                setStatusMessage("");
+            }, 3000);
         }
-        */
     };
 
     const processResult = (productData) => {
@@ -153,7 +153,7 @@ const CameraView = () => {
         setResult(null);
         setQuery('');
         if (mode === 'barcode') {
-            startBarcodeScanner(); // Resume scanning
+            startBarcodeScanner();
         }
     };
 
@@ -198,6 +198,7 @@ const CameraView = () => {
                             videoConstraints={{ facingMode: 'environment' }}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
+                        {/* If you created ScannerOverlay earlier, this is where it works */}
                         <ScannerOverlay status={scanning ? 'analyzing' : (result ? result.status : 'scanning')} />
                     </>
                 ) : (
@@ -207,7 +208,7 @@ const CameraView = () => {
                         <button
                             className="btn-primary"
                             onClick={() => fileInputRef.current.click()}
-                            style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '8px', margin: '1rem auto' }}
+                            style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '8px', margin: '1rem auto', padding: '12px 24px', borderRadius: '30px' }}
                         >
                             <Camera size={20} /> Capture Photo
                         </button>
@@ -245,8 +246,26 @@ const CameraView = () => {
                 </form>
             </div>
 
+            {/* RESULT POPUP + SAFE SWAP SUGGESTIONS */}
             {result && (
-                <WarningPopup result={result} onClose={closePopup} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 50 }}>
+                    {/* Render the standard popup */}
+                    <WarningPopup result={result} onClose={closePopup} />
+
+                    {/* Render Safe Swap ON TOP if alternatives exist */}
+                    {result.safeAlternatives && result.safeAlternatives.length > 0 && (
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '20px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '90%',
+                            zIndex: 60
+                        }}>
+                            <SafeSwap alternatives={result.safeAlternatives} />
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

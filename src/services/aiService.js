@@ -1,98 +1,102 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize the API
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// 1. Setup the API Key
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+if (!API_KEY) {
+    console.error("❌ MISSING API KEY: Please set VITE_GEMINI_API_KEY in your .env file");
+}
+
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// 2. Select the Model (We confirmed this works for you!)
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 /**
- * Converts a File object to a GoogleGenerativeAI.Part object.
- * @param {File} file 
- * @returns {Promise<Object>}
+ * Converts a File object to a GoogleGenerativeAI Part object.
  */
 async function fileToGenerativePart(file) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64Data = reader.result.split(',')[1];
             resolve({
                 inlineData: {
                     data: base64Data,
-                    mimeType: file.type
+                    mimeType: file.type,
                 },
             });
         };
-        reader.onerror = reject;
         reader.readAsDataURL(file);
     });
 }
 
 /**
- * Analyzes an image for allergens using Google Gemini.
- * @param {File} imageFile - The image file to analyze.
- * @param {Array<string>} userAllergens - List of allergens to check against.
- * @returns {Promise<{isSafe: boolean, detectedAllergens: string[], safeAlternatives: string[]}>}
+ * Main Function: Analyzes image for allergens and finds alternatives
  */
-export const analyzeImage = async (imageFile, userAllergens) => {
+export async function analyzeImage(imageFile, userAllergens = []) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        console.log("🤖 AI Service: Analyzing image...");
 
+        // Convert image for Gemini
         const imagePart = await fileToGenerativePart(imageFile);
-        const allergensList = userAllergens.join(", ");
 
-        const prompt = `Identify the ingredients in this image. Compare them against this list of allergens: [${allergensList}]. Return a JSON object with: { isSafe: boolean, detectedAllergens: [], safeAlternatives: [] }. Do not include markdown formatting, just the raw JSON string.`;
+        // 3. The Smart Prompt
+        // We explicitly ask for JSON so we can easily read the result in our app
+        const prompt = `
+      You are an expert food safety assistant.
+      
+      Task:
+      1. Analyze the ingredients in this image.
+      2. Check against these user allergies: ${userAllergens.join(", ")}.
+      3. If you find a match, suggest 3 safe, common alternatives (e.g., if Dairy is found, suggest Oat Milk).
+      
+      Return ONLY a raw JSON object (no markdown, no backticks) with this exact structure:
+      {
+        "status": "safe" | "danger" | "caution",
+        "detected": ["allergen1", "allergen2"],
+        "alternatives": ["Safe Option 1", "Safe Option 2", "Safe Option 3"]
+      }
+    `;
 
+        // 4. Send to Google
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
-        const text = response.text();
+        let text = response.text();
 
-        // Clean up text if it contains markdown code blocks
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        console.log("🤖 Raw AI Response:", text);
 
-        return JSON.parse(cleanText);
+        // Clean up potential markdown formatting (just in case)
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // 5. Parse the JSON
+        const data = JSON.parse(text);
+        return data;
+
     } catch (error) {
-        console.error("Error analyzing image with Gemini:", error);
-        throw new Error("Failed to analyze image. Please try again.");
+        console.error("❌ AI Service Error:", error);
+        // Return a "safe fail" object so the app doesn't crash
+        return {
+            status: "caution",
+            detected: ["Error analyzing image"],
+            alternatives: []
+        };
     }
-};
+}
 
 /**
- * Sends a message to the Allergen Buddy chatbot.
- * @param {string} message - The user's message.
- * @param {Array<string>} userAllergens - List of user's allergens.
- * @param {Array<{role: string, parts: Array<{text: string}>}>} history - Chat history.
- * @returns {Promise<string>} - The bot's response.
+ * Chat Function (for the Buddy feature)
  */
-export const chatWithBuddy = async (message, userAllergens, history = []) => {
+export async function chatWithBuddy(message, history = []) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        const allergensList = userAllergens.join(", ");
-        const systemInstruction = `You are "Allergen Buddy", a friendly and helpful AI assistant for someone with the following allergens: [${allergensList}]. 
-        Your goal is to help them find safe foods, suggest alternatives, and answer questions about their allergies. 
-        Be encouraging but cautious. Always remind them to check labels physically. 
-        Keep responses concise and easy to read. Use emojis occasionally.`;
-
         const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: `System Instruction: ${systemInstruction}` }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Got it! I'm ready to help as Allergen Buddy. 🛡️" }],
-                },
-                ...history
-            ],
-            generationConfig: {
-                maxOutputTokens: 500,
-            },
+            history: history,
         });
-
         const result = await chat.sendMessage(message);
         const response = await result.response;
         return response.text();
     } catch (error) {
-        console.error("Error chatting with Buddy:", error);
-        return "I'm having trouble connecting right now. Please try again later! 😓";
+        console.error("Chat Error:", error);
+        return "I'm having trouble connecting right now. Please try again later!";
     }
-};
+}

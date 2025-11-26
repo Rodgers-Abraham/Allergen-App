@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUser, getHistory, logoutUser, getTheme, saveTheme } from '../../lib/storage';
 import Character from './Character';
-import { Scan, LogOut, Moon, Sun, History } from 'lucide-react';
+import { Scan, LogOut, Moon, Sun, History, Gamepad2, MessageCircle } from 'lucide-react';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -39,8 +39,9 @@ const Home = () => {
     if (!user) return null;
 
     return (
-        <div className="container">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            {/* --- HEADER (Unchanged) --- */}
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div
                     style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                     onClick={() => navigate('/profile')}
@@ -65,66 +66,96 @@ const Home = () => {
                 </div>
             </header>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
-                <Character status="happy" />
+            {/* --- MIDDLE SECTION (UPDATED TO GRID) --- */}
+            <div style={{
+                flex: 1,
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr', // Creates two equal columns
+                gap: '15px',
+                alignContent: 'center', // Vertically centers the grid
+                width: '100%',
+                maxWidth: '500px', // Prevents it from getting too wide on desktop
+                margin: '0 auto'
+            }}>
 
+                {/* 1. Character (Spans both columns) */}
+                <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+                    <Character status="happy" />
+                </div>
+
+                {/* 2. Scan Button (Spans both columns - BIG) */}
                 <button
                     className="btn-primary"
                     style={{
+                        gridColumn: 'span 2', // Spans full width
                         fontSize: '1.5rem',
-                        padding: '1rem 3rem',
+                        padding: '1.5rem',
                         display: 'flex',
+                        flexDirection: 'column', // Icon on top of text
                         alignItems: 'center',
-                        gap: '1rem',
-                        borderRadius: '50px'
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        borderRadius: '20px',
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
                     }}
                     onClick={() => navigate('/scan')}
                 >
-                    <Scan size={32} />
-                    Scan Now
+                    <Scan size={40} />
+                    Scan Food
                 </button>
 
+                {/* 3. Game Button (Left Column) */}
                 <button
                     style={{
                         background: 'var(--color-surface)',
                         color: 'var(--color-primary)',
                         border: '2px solid var(--color-primary)',
                         fontSize: '1rem',
-                        padding: '0.8rem 2rem',
+                        padding: '1.5rem 1rem',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '0.5rem',
-                        borderRadius: '50px',
+                        borderRadius: '20px',
                         cursor: 'pointer',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        aspectRatio: '1/1' // Makes it a square
                     }}
                     onClick={() => navigate('/game')}
                 >
-                    <Character status="happy" size={24} /> Play Allergy Hero
+                    <Gamepad2 size={32} />
+                    Play Hero
                 </button>
 
+                {/* 4. Chat Button (Right Column) */}
                 <button
                     style={{
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
                         border: 'none',
                         fontSize: '1rem',
-                        padding: '0.8rem 2rem',
+                        padding: '1.5rem 1rem',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '0.5rem',
-                        borderRadius: '50px',
+                        borderRadius: '20px',
                         cursor: 'pointer',
                         fontWeight: 'bold',
-                        boxShadow: '0 4px 15px rgba(118, 75, 162, 0.4)'
+                        boxShadow: '0 4px 15px rgba(118, 75, 162, 0.4)',
+                        aspectRatio: '1/1' // Makes it a square
                     }}
                     onClick={() => navigate('/buddy')}
                 >
-                    <span style={{ fontSize: '1.2rem' }}>🤖</span> Chat with Buddy
+                    <MessageCircle size={32} />
+                    Chat Buddy
                 </button>
             </div>
 
-            <div style={{ marginTop: 'auto' }}>
+            {/* --- FOOTER (Unchanged) --- */}
+            <div style={{ marginTop: '2rem' }}>
                 <h3><History size={16} style={{ verticalAlign: 'middle' }} /> Recent Scans</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto' }}>
                     {history.length === 0 ? (

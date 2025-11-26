@@ -1,6 +1,6 @@
 import React from 'react';
 import Character from '../Dashboard/Character';
-import SafeSwapList from '../Scanner/SafeSwapList';
+import SafeSwap from '../Scanner/SafeSwap';
 import { X } from 'lucide-react';
 
 const WarningPopup = ({ result, onClose }) => {
@@ -79,7 +79,7 @@ const WarningPopup = ({ result, onClose }) => {
                             <strong>Action Required:</strong><br />
                             Do not consume. Find an alternative.
                         </div>
-                        <SafeSwapList allergens={result.detectedAllergens || []} />
+                        <SafeSwap alternatives={result.alternatives || []} />
                     </>
                 )}
 
