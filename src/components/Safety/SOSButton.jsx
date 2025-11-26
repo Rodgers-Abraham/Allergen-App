@@ -1,145 +1,139 @@
-import React, { useState, useRef } from 'react';
-import { PhoneCall } from 'lucide-react';
+import React, { useState } from 'react';
+import { Phone, AlertTriangle, X } from 'lucide-react';
 
 const SOSButton = () => {
-    const [pressing, setPressing] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const timerRef = useRef(null);
-    const intervalRef = useRef(null);
+    const [showEmergencyCard, setShowEmergencyCard] = useState(false);
+    const [userData, setUserData] = useState(null); // Store data for the card
 
-    const handleStart = (e) => {
-        e.preventDefault(); // Prevent context menu on mobile
-        setPressing(true);
-        setProgress(0);
+    const handleSOSClick = () => {
+        // 1. FORCE READ: Read directly from disk to get the freshest data
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        setUserData(currentUser); // Save for the visual card
 
-        const startTime = Date.now();
-        const duration = 3000; // 3 seconds
+        console.log("SOS Triggered. Data found:", currentUser); // Debug check
 
-        intervalRef.current = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const newProgress = Math.min((elapsed / duration) * 100, 100);
-            setProgress(newProgress);
-        }, 50);
-
-        timerRef.current = setTimeout(() => {
-            triggerSOS();
-            reset();
-        }, duration);
-    };
-
-    const handleEnd = () => {
-        if (pressing) {
-            reset();
+        // 2. CHECK: Do we have a phone number?
+        if (!currentUser.emergencyContactPhone) {
+            alert("⚠️ Please add an Emergency Contact in your Profile first!");
+            // Optional: Redirect them to profile automatically?
+            // window.location.href = '/profile'; 
+            return;
         }
-    };
 
-    const reset = () => {
-        setPressing(false);
-        setProgress(0);
-        clearTimeout(timerRef.current);
-        clearInterval(intervalRef.current);
-    };
+        // 3. VIBRATE: Tactile Feedback
+        if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
 
-    const triggerSOS = () => {
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 500]);
-
-        // Get location if possible
+        // 4. SMS LOGIC
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                    sendSMS(mapsLink);
-                },
-                (error) => {
-                    console.error("Location error", error);
-                    sendSMS("Location unavailable");
-                }
-            );
-        } else {
-            sendSMS("Location unavailable");
-        }
-    };
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const long = position.coords.longitude;
+                const mapsLink = `http://maps.google.com/?q=${lat},${long}`;
 
-    const sendSMS = (locationInfo) => {
-        const message = `HELP! Allergic reaction detected. My location: ${locationInfo}`;
-        // Use a dummy number or prompt user to configure
-        const phoneNumber = "1234567890";
-        window.open(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`, '_blank');
+                const message = `SOS! I am having an allergic reaction. Please help! My location: ${mapsLink}`;
+                window.open(`sms:${currentUser.emergencyContactPhone}?body=${encodeURIComponent(message)}`, '_blank');
+            }, () => {
+                // Fallback if GPS blocked
+                const message = "SOS! I am having an allergic reaction. Please help!";
+                window.open(`sms:${currentUser.emergencyContactPhone}?body=${encodeURIComponent(message)}`, '_blank');
+            });
+        } else {
+            const message = "SOS! I am having an allergic reaction. Please help!";
+            window.open(`sms:${currentUser.emergencyContactPhone}?body=${encodeURIComponent(message)}`, '_blank');
+        }
+
+        // 5. SHOW CARD
+        setShowEmergencyCard(true);
     };
 
     return (
-        <div
-            style={{
-                position: 'fixed',
-                bottom: '80px', // Above bottom nav if exists, or just bottom right
-                right: '20px',
-                zIndex: 1000,
-                userSelect: 'none',
-                WebkitUserSelect: 'none'
-            }}
-            onMouseDown={handleStart}
-            onMouseUp={handleEnd}
-            onMouseLeave={handleEnd}
-            onTouchStart={handleStart}
-            onTouchEnd={handleEnd}
-        >
-            {/* Progress Ring */}
-            <svg width="80" height="80" style={{ transform: 'rotate(-90deg)', position: 'absolute', top: -10, left: -10, pointerEvents: 'none' }}>
-                <circle
-                    cx="40" cy="40" r="38"
-                    stroke="rgba(255,0,0,0.2)"
-                    strokeWidth="4"
-                    fill="none"
-                />
-                <circle
-                    cx="40" cy="40" r="38"
-                    stroke="red"
-                    strokeWidth="4"
-                    fill="none"
-                    strokeDasharray="239" // 2 * pi * 38
-                    strokeDashoffset={239 - (239 * progress) / 100}
-                    style={{ transition: 'stroke-dashoffset 0.05s linear' }}
-                />
-            </svg>
-
+        <>
+            {/* The Floating Button */}
             <button
+                onClick={handleSOSClick}
                 style={{
+                    position: 'fixed',
+                    bottom: '20px',
+                    right: '20px',
                     width: '60px',
                     height: '60px',
                     borderRadius: '50%',
-                    backgroundColor: pressing ? '#b71c1c' : '#f44336',
-                    border: 'none',
+                    backgroundColor: '#dc2626', // Red
                     color: 'white',
+                    border: '4px solid rgba(255,255,255,0.3)',
+                    boxShadow: '0 0 20px rgba(220, 38, 38, 0.6)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)',
                     cursor: 'pointer',
-                    transform: pressing ? 'scale(0.95)' : 'scale(1)',
-                    transition: 'all 0.2s ease',
-                    outline: 'none'
+                    zIndex: 90,
+                    animation: 'pulse-red 2s infinite'
                 }}
             >
-                <PhoneCall size={28} />
+                <Phone size={28} />
+                <style>{`
+                    @keyframes pulse-red {
+                        0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+                        70% { box-shadow: 0 0 0 20px rgba(220, 38, 38, 0); }
+                        100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+                    }
+                `}</style>
             </button>
 
-            {pressing && (
+            {/* The Full Screen Emergency Card */}
+            {showEmergencyCard && (
                 <div style={{
-                    position: 'absolute',
-                    bottom: '70px',
-                    right: '0',
-                    background: 'rgba(0,0,0,0.8)',
+                    position: 'fixed',
+                    top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: '#dc2626',
+                    zIndex: 100,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    whiteSpace: 'nowrap'
+                    padding: '20px',
+                    boxSizing: 'border-box'
                 }}>
-                    Hold for SOS
+                    <button
+                        onClick={() => setShowEmergencyCard(false)}
+                        style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+                    >
+                        <X size={40} />
+                    </button>
+
+                    <AlertTriangle size={80} style={{ marginBottom: '20px', animation: 'shake 0.5s infinite' }} />
+
+                    <h1 style={{ fontSize: '3rem', margin: 0, textAlign: 'center' }}>HELP!</h1>
+                    <h2 style={{ fontSize: '1.5rem', opacity: 0.9, textAlign: 'center' }}>ALLERGIC REACTION</h2>
+
+                    <div style={{ background: 'white', color: '#333', padding: '20px', borderRadius: '16px', width: '100%', marginTop: '30px' }}>
+                        {/* Display the data we captured on click */}
+                        <div style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#666' }}>NAME</label>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{userData?.fullName || 'Unknown'}</div>
+                        </div>
+                        <div style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#666' }}>ALLERGIES</label>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#dc2626' }}>
+                                {userData?.allergens?.join(', ') || 'None Listed'}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div>
+                                <label style={{ fontSize: '0.8rem', color: '#666' }}>BLOOD</label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{userData?.bloodType || 'N/A'}</div>
+                            </div>
+                            {userData?.hasEpiPen && (
+                                <div style={{ background: '#dcfce7', padding: '5px 10px', borderRadius: '8px', color: '#166534', fontWeight: 'bold' }}>
+                                    💉 HAS EPIPEN
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

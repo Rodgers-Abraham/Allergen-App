@@ -1,237 +1,221 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUser, updateUserProfile, logoutUser } from '../../lib/storage';
-import { COMMON_ALLERGENS } from '../../lib/mockDatabase';
-import { ArrowLeft, Camera, LogOut, Save } from 'lucide-react';
+import { ArrowLeft, Save, User, Activity, AlertCircle, LogOut, Trash2 } from 'lucide-react';
+import { logoutUser } from '../../lib/storage';
 
 const UserProfile = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState(null);
+
+    // Default Empty State
+    const [formData, setFormData] = useState({
+        fullName: '',
+        nickname: '',
+        email: '',
+        phoneNumber: '',
+        bloodType: '',
+        hasEpiPen: false,
+        emergencyContactName: '',
+        emergencyContactPhone: '',
+        allergens: []
+    });
     const [message, setMessage] = useState('');
 
+    // --- 1. FORCE LOAD DATA ON MOUNT ---
     useEffect(() => {
-        const user = getUser();
-        if (!user) {
-            navigate('/');
-            return;
+        try {
+            // Read raw string directly from browser memory
+            const rawData = localStorage.getItem('user');
+
+            if (rawData) {
+                const parsedData = JSON.parse(rawData);
+                console.log("📥 LOADED FROM STORAGE:", parsedData); // Check your console!
+
+                // Merge: Use saved data, fall back to current defaults if missing
+                setFormData(prev => ({
+                    ...prev,
+                    ...parsedData,
+                    // Ensure booleans are actually booleans
+                    hasEpiPen: parsedData.hasEpiPen === true || parsedData.hasEpiPen === "true"
+                }));
+            }
+        } catch (err) {
+            console.error("Load Error:", err);
         }
-        setFormData(user);
-    }, [navigate]);
+    }, []);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, profilePicture: reader.result }));
+    // --- 2. DIRECT SAVE ---
+    const handleSave = (e) => {
+        e.preventDefault();
+        try {
+            // Get what's currently on disk (to keep ID/Password safe)
+            const currentDiskData = JSON.parse(localStorage.getItem('user') || '{}');
+
+            // Merge it with our form data
+            const newData = {
+                ...currentDiskData,
+                ...formData
             };
-            reader.readAsDataURL(file);
+
+            // Write back to disk
+            localStorage.setItem('user', JSON.stringify(newData));
+            console.log("💾 SAVED TO STORAGE:", newData); // Check console!
+
+            setMessage("Profile Saved Successfully! ✅");
+
+            // Force a small delay so user sees the message
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error) {
+            console.error("Save Error:", error);
+            setMessage("Error saving. Check console.");
         }
     };
 
-    const handleAllergenToggle = (allergen) => {
-        setFormData(prev => {
-            const newAllergens = prev.allergens.includes(allergen)
-                ? prev.allergens.filter(a => a !== allergen)
-                : [...prev.allergens, allergen];
-            return { ...prev, allergens: newAllergens };
-        });
-    };
-
-    const handleSave = (e) => {
-        e.preventDefault();
-        updateUserProfile(formData);
-        setMessage('Profile saved successfully!');
-        setTimeout(() => setMessage(''), 3000);
-    };
-
-    const handleSignOut = () => {
+    const handleLogout = () => {
         logoutUser();
         navigate('/');
     };
 
-    if (!formData) return null;
+    const handleDeleteAccount = () => {
+        if (window.confirm("Are you sure? This cannot be undone.")) {
+            localStorage.clear(); // Wipe everything
+            navigate('/');
+        }
+    };
 
     return (
-        <div className="container">
-            <header style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                <button onClick={() => navigate('/dashboard')} style={{ background: 'transparent', border: 'none', padding: 0 }}>
-                    <ArrowLeft size={24} color="var(--color-text)" />
+        <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', paddingBottom: '40px' }}>
+
+            {/* Header */}
+            <div style={{ padding: '20px', background: 'white', display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+                <button onClick={() => navigate('/dashboard')} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
+                    <ArrowLeft size={24} />
                 </button>
-                <h2 style={{ margin: 0 }}>Edit Profile</h2>
-            </header>
-
-            <div className="card">
-                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-                    <div style={{ textAlign: 'center' }}>
-                        <label htmlFor="profile-upload-edit" style={{ cursor: 'pointer', display: 'inline-block', position: 'relative' }}>
-                            <div style={{
-                                width: '100px', height: '100px', borderRadius: '50%',
-                                backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                overflow: 'hidden', border: '2px solid var(--color-primary)'
-                            }}>
-                                {formData.profilePicture ? (
-                                    <img src={formData.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <Camera size={40} color="#ccc" />
-                                )}
-                            </div>
-                            <div style={{
-                                position: 'absolute', bottom: 0, right: 0,
-                                background: 'var(--color-primary)', borderRadius: '50%',
-                                padding: '4px', color: 'white'
-                            }}>
-                                <Camera size={16} />
-                            </div>
-                        </label>
-                        <input
-                            id="profile-upload-edit"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            style={{ display: 'none' }}
-                        />
-                    </div>
-
-                    <label>
-                        <strong>Full Name</strong>
-                        <input
-                            type="text"
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', marginTop: '4px' }}
-                        />
-                    </label>
-
-                    <label>
-                        <strong>Nickname</strong>
-                        <input
-                            type="text"
-                            name="nickname"
-                            value={formData.nickname}
-                            onChange={handleChange}
-                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', marginTop: '4px' }}
-                        />
-                    </label>
-
-                    <div>
-                        <strong>Your Allergens</strong>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px', marginBottom: '1rem' }}>
-                            {COMMON_ALLERGENS.map(allergen => (
-                                <button
-                                    key={allergen}
-                                    type="button"
-                                    onClick={() => handleAllergenToggle(allergen)}
-                                    style={{
-                                        background: formData.allergens.includes(allergen) ? 'var(--color-danger)' : 'var(--color-surface)',
-                                        color: formData.allergens.includes(allergen) ? 'white' : 'var(--color-text)',
-                                        border: '1px solid var(--color-border)',
-                                        fontSize: '0.9em',
-                                        padding: '8px 16px'
-                                    }}
-                                >
-                                    {allergen}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <input
-                                type="text"
-                                placeholder="Add other allergen..."
-                                id="customAllergenProfile"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        const val = e.target.value.trim();
-                                        if (val && !formData.allergens.includes(val)) {
-                                            handleAllergenToggle(val);
-                                            e.target.value = '';
-                                        }
-                                    }
-                                }}
-                                style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const input = document.getElementById('customAllergenProfile');
-                                    const val = input.value.trim();
-                                    if (val && !formData.allergens.includes(val)) {
-                                        handleAllergenToggle(val);
-                                        input.value = '';
-                                    }
-                                }}
-                                className="btn-primary"
-                                style={{ padding: '8px 16px' }}
-                            >
-                                Add
-                            </button>
-                        </div>
-
-                        {/* Show selected custom allergens that are NOT in common list */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '1rem' }}>
-                            {formData.allergens.filter(a => !COMMON_ALLERGENS.includes(a)).map(allergen => (
-                                <span
-                                    key={allergen}
-                                    style={{
-                                        background: 'var(--color-danger)',
-                                        color: 'white',
-                                        padding: '4px 12px',
-                                        borderRadius: '16px',
-                                        fontSize: '0.9em',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                    }}
-                                >
-                                    {allergen}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAllergenToggle(allergen)}
-                                        style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, marginLeft: '4px' }}
-                                    >
-                                        ×
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-                        <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <Save size={20} /> Save Changes
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleSignOut}
-                            style={{
-                                background: 'transparent',
-                                color: 'var(--color-danger)',
-                                border: '1px solid var(--color-danger)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                            }}
-                        >
-                            <LogOut size={20} /> Sign Out
-                        </button>
-                    </div>
-
-                    {message && (
-                        <p style={{ textAlign: 'center', color: 'var(--color-primary)', fontWeight: 'bold' }}>{message}</p>
-                    )}
-
-                </form>
+                <h2 style={{ margin: 0 }}>My Profile</h2>
             </div>
+
+            <form onSubmit={handleSave} style={{ maxWidth: '600px', margin: '20px auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                {message && <div style={{ padding: '10px', background: '#dcfce7', color: '#166534', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold' }}>{message}</div>}
+
+                {/* EMERGENCY CONTACT */}
+                <div style={styles.card}>
+                    <h3 style={styles.sectionTitle}><AlertCircle size={20} /> Next of Kin (SOS)</h3>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Contact Name</label>
+                        <input
+                            type="text"
+                            name="emergencyContactName"
+                            value={formData.emergencyContactName}
+                            onChange={handleChange}
+                            placeholder="e.g. Mom"
+                            style={styles.input}
+                        />
+                    </div>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Contact Phone</label>
+                        <input
+                            type="tel"
+                            name="emergencyContactPhone"
+                            value={formData.emergencyContactPhone}
+                            onChange={handleChange}
+                            placeholder="+1234567890"
+                            style={styles.input}
+                        />
+                    </div>
+                </div>
+
+                {/* MEDICAL ID */}
+                <div style={styles.card}>
+                    <h3 style={styles.sectionTitle}><Activity size={20} /> Medical Details</h3>
+                    <div style={{ ...styles.inputGroup, flex: 1 }}>
+                        <label style={styles.label}>Blood Type</label>
+                        <select name="bloodType" value={formData.bloodType} onChange={handleChange} style={styles.input}>
+                            <option value="">Select...</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: '#fff3cd', borderRadius: '8px' }}>
+                        <input
+                            type="checkbox"
+                            id="epipen"
+                            name="hasEpiPen"
+                            checked={formData.hasEpiPen}
+                            onChange={handleChange}
+                            style={{ width: '20px', height: '20px' }}
+                        />
+                        <label htmlFor="epipen" style={{ fontWeight: 'bold', color: '#856404' }}>I carry an EpiPen</label>
+                    </div>
+                </div>
+
+                {/* PERSONAL INFO */}
+                <div style={styles.card}>
+                    <h3 style={styles.sectionTitle}><User size={20} /> Personal Info</h3>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Full Name</label>
+                        <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} style={styles.input} />
+                    </div>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Phone Number</label>
+                        <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} style={styles.input} />
+                    </div>
+
+                    {/* READ-ONLY ALLERGENS (Reminder) */}
+                    <div style={{ marginTop: '15px' }}>
+                        <label style={styles.label}>My Allergies (Set during Signup)</label>
+                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                            {formData.allergens && formData.allergens.length > 0 ? (
+                                formData.allergens.map((alg, i) => (
+                                    <span key={i} style={{ background: '#fee2e2', color: '#dc2626', padding: '4px 10px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold' }}>{alg}</span>
+                                ))
+                            ) : (
+                                <span style={{ color: '#999', fontSize: '0.9rem' }}>No allergies listed.</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" className="btn-primary" style={styles.saveBtn}>
+                    <Save size={20} /> Save Profile
+                </button>
+
+                {/* DANGER ZONE */}
+                <div style={{ marginTop: '30px', borderTop: '1px solid #ddd', paddingTop: '20px' }}>
+                    <button type="button" onClick={handleLogout} style={styles.logoutBtn}>
+                        <LogOut size={20} /> Log Out
+                    </button>
+                    <button type="button" onClick={handleDeleteAccount} style={styles.deleteBtn}>
+                        <Trash2 size={20} /> Delete Account
+                    </button>
+                </div>
+            </form>
         </div>
     );
+};
+
+const styles = {
+    card: { background: 'white', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
+    sectionTitle: { margin: '0 0 15px 0', display: 'flex', alignItems: 'center', gap: '10px', color: '#333', fontSize: '1.1rem' },
+    inputGroup: { marginBottom: '15px' },
+    label: { display: 'block', fontSize: '0.9rem', color: '#666', marginBottom: '5px' },
+    input: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' },
+    saveBtn: { padding: '15px', borderRadius: '12px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: '#28a745', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(40, 167, 69, 0.3)', width: '100%' },
+    logoutBtn: { width: '100%', padding: '15px', borderRadius: '12px', fontSize: '1rem', background: '#e5e7eb', color: '#374151', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '10px', fontWeight: '600' },
+    deleteBtn: { width: '100%', padding: '15px', borderRadius: '12px', fontSize: '1rem', background: '#fee2e2', color: '#dc2626', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: '600' }
 };
 
 export default UserProfile;

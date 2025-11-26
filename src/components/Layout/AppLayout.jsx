@@ -9,18 +9,6 @@ const AppLayout = () => {
                 <Outlet />
             </div>
             <SOSButton />
-            <footer style={{
-                textAlign: 'center',
-                padding: '1rem',
-                background: 'var(--color-bg)',
-                color: 'var(--color-text-muted)',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                width: '100%',
-                marginTop: 'auto'
-            }}>
-                BUILT BY BLACK PUPPY
-            </footer>
         </div>
     );
 };

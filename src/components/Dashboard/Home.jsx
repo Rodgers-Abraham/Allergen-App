@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getUser, getHistory, logoutUser, getTheme, saveTheme } from '../../lib/storage';
 import Character from './Character';
 import { Scan, LogOut, Moon, Sun, History, Gamepad2, MessageCircle } from 'lucide-react';
-
+import SOSButton from '../Safety/SOSButton';
 const Home = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -40,7 +40,7 @@ const Home = () => {
 
     return (
         <div className="container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            {/* --- HEADER (Unchanged) --- */}
+            {/* --- HEADER --- */}
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div
                     style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
@@ -66,32 +66,32 @@ const Home = () => {
                 </div>
             </header>
 
-            {/* --- MIDDLE SECTION (UPDATED TO GRID) --- */}
+            {/* --- MIDDLE SECTION (GRID) --- */}
             <div style={{
                 flex: 1,
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr', // Creates two equal columns
+                gridTemplateColumns: '1fr 1fr',
                 gap: '15px',
-                alignContent: 'center', // Vertically centers the grid
+                alignContent: 'center',
                 width: '100%',
-                maxWidth: '500px', // Prevents it from getting too wide on desktop
+                maxWidth: '500px',
                 margin: '0 auto'
             }}>
 
-                {/* 1. Character (Spans both columns) */}
+                {/* 1. Character */}
                 <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
                     <Character status="happy" />
                 </div>
 
-                {/* 2. Scan Button (Spans both columns - BIG) */}
+                {/* 2. Scan Button */}
                 <button
                     className="btn-primary"
                     style={{
-                        gridColumn: 'span 2', // Spans full width
+                        gridColumn: 'span 2',
                         fontSize: '1.5rem',
                         padding: '1.5rem',
                         display: 'flex',
-                        flexDirection: 'column', // Icon on top of text
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.5rem',
@@ -104,7 +104,7 @@ const Home = () => {
                     Scan Food
                 </button>
 
-                {/* 3. Game Button (Left Column) */}
+                {/* 3. Game Button */}
                 <button
                     style={{
                         background: 'var(--color-surface)',
@@ -120,7 +120,7 @@ const Home = () => {
                         borderRadius: '20px',
                         cursor: 'pointer',
                         fontWeight: 'bold',
-                        aspectRatio: '1/1' // Makes it a square
+                        aspectRatio: '1/1'
                     }}
                     onClick={() => navigate('/game')}
                 >
@@ -128,7 +128,7 @@ const Home = () => {
                     Play Hero
                 </button>
 
-                {/* 4. Chat Button (Right Column) */}
+                {/* 4. Chat Button */}
                 <button
                     style={{
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -145,7 +145,7 @@ const Home = () => {
                         cursor: 'pointer',
                         fontWeight: 'bold',
                         boxShadow: '0 4px 15px rgba(118, 75, 162, 0.4)',
-                        aspectRatio: '1/1' // Makes it a square
+                        aspectRatio: '1/1'
                     }}
                     onClick={() => navigate('/buddy')}
                 >
@@ -154,7 +154,7 @@ const Home = () => {
                 </button>
             </div>
 
-            {/* --- FOOTER (Unchanged) --- */}
+            {/* --- RECENT SCANS --- */}
             <div style={{ marginTop: '2rem' }}>
                 <h3><History size={16} style={{ verticalAlign: 'middle' }} /> Recent Scans</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto' }}>
@@ -175,6 +175,14 @@ const Home = () => {
                     )}
                 </div>
             </div>
+
+            {/* --- THE FOOTER (Only visible here) --- */}
+            <div style={{ textAlign: 'center', marginTop: '30px', padding: '20px', color: '#666', fontSize: '0.8rem', opacity: 0.7 }}>
+                BUILT BY BLACK PUPPY 🐾
+            </div>
+
+            {/* The Smart SOS Button */}
+            <SOSButton />
         </div>
     );
 };
