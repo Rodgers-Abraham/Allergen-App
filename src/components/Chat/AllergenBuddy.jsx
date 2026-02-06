@@ -3,11 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Bot, User } from 'lucide-react';
 import { getUser } from '../../lib/storage';
 import { chatWithBuddy } from '../../services/aiService';
-// Wait, previous file was src/services/aiService.js. I should check where it is imported from usually or just use relative path.
-// The user asked for src/services/aiService.js but previous edits might have been mixed. 
-// Let's stick to the file I just edited: src/services/aiService.js
-// But wait, the previous file edit was to c:\Codes\Allergen App\src\services\aiService.js
-// I need to make sure I import from there.
 
 const AllergenBuddy = () => {
     const navigate = useNavigate();
@@ -41,10 +36,7 @@ const AllergenBuddy = () => {
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setLoading(true);
-
-        // Format history for Gemini (excluding the initial greeting if it's local only, but here we can just pass the conversation so far)
-        // The service handles the system prompt, so we just pass the user/model exchange.
-        // Gemini expects { role: "user" | "model", parts: [{ text: "..." }] }
+        
         const historyForApi = messages.slice(1).map(m => ({
             role: m.role,
             parts: [{ text: m.text }]
