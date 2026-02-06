@@ -10,11 +10,8 @@ if (!API_KEY) {
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // 2. Select the Model (Fixed Syntax)
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-/**
- * Converts a File object to a GoogleGenerativeAI Part object.
- */
 async function fileToGenerativePart(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
